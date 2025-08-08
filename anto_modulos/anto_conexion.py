@@ -5,7 +5,6 @@ import pyodbc
 from datetime import datetime
 
 drivers = [
-        'ODBC Driver 17 for SQL Server',  # Preferido y más reciente
         'SQL Server Native Client 11.0',  # Native Client version 11
         'SQL Server Native Client 10.0',  # Native Client version 10
         'SQL Server',  # Generic ODBC driver name (legacy)

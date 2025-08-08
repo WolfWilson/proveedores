@@ -11,6 +11,7 @@ from anto_modulos.anto_conexion import (
     actualizar_registro
 )
 from anto_modulos.style import STYLE
+from anto_modulos.centrar_ventana import center_on_screen  # Importar la función para centrar la ventana
 
 
 class VentanaNuevo(QDialog):
@@ -362,19 +363,15 @@ class CUILSearchApp(QWidget):
     def mostrar_mensaje_error(self, mensaje):
         QMessageBox.critical(self, 'Error', mensaje)
 
-
 # Código principal para ejecutar la aplicación
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-
-    # Aplicar el estilo desde el archivo `style.py`
     app.setStyleSheet(STYLE)
 
-    # Crear la ventana principal
     ventana = CUILSearchApp()
+    ventana.setWindowIcon(QIcon("userprofile4.png"))
+    center_on_screen(ventana)       # ← luego centrar
+    ventana.show()                  # ← primero mostrar
+    
 
-    # Mostrar la ventana
-    ventana.show()
-
-    # Ejecutar la aplicación
     sys.exit(app.exec_())
