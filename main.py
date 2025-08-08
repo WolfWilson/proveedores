@@ -22,6 +22,7 @@ from anto_modulos.anto_conexion import (
 )
 from anto_modulos.style import STYLE
 from anto_modulos.centrar_ventana import center_on_screen
+from anto_modulos.resources import ICON_MAIN, DATE_ARROW_DOWN
 
 # ──────────────────────────────
 # Configuración/Constantes
@@ -395,8 +396,9 @@ class CUILSearchApp(QWidget):
 # ──────────────────────────────
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyleSheet(STYLE)
-
+    app.setStyleSheet(STYLE)  # opcional, si no te importa el style, comentalo
     win = CUILSearchApp()
+    win.setWindowIcon(QIcon(ICON_MAIN))
     win.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec_())  # PyQt5 usa exec_()
+
