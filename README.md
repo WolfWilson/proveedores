@@ -55,6 +55,10 @@ proveedores/
 ├── requirements.txt     # Dependencias del proyecto
 └── README.md            # Este archivo
 ```
+## Pyinstaller
+   ```bash
+pyinstaller --onefile --noconsole --icon "Source/icon.ico" --add-data "Source;Source" --add-data "anto_modulos;anto_modulos" main.py
+   ```
 
 ## 🤝 Contribuir
 1. Haz un **fork** del repositorio.
