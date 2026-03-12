@@ -20,8 +20,18 @@ Permite consultar, agregar y editar información directamente desde una base de 
 ## 🛠 Tecnologías Utilizadas
 - **Lenguaje**: [Python 3.10+](https://www.python.org/)
 - **Interfaz gráfica**: [PyQt5](https://riverbankcomputing.com/software/pyqt/intro)
-- **Base de datos**: [Microsoft SQL Server 2014](https://www.microsoft.com/es-es/sql-server/sql-server-2014)
+- **Base de datos**: [Microsoft SQL Server 2014](https://www.microsoft.com/es-es/sql-server/sql-server-2014) — conexión vía `pyodbc` con autenticación Windows (`Trusted_Connection`)
+- **Empaquetado**: [PyInstaller](https://pyinstaller.org/) — genera ejecutable `.exe` standalone
 - **Control de versiones**: [Git](https://git-scm.com/)
+
+## 📦 Dependencias Python
+
+| Paquete | Uso |
+|---|---|
+| `PyQt5` | Interfaz gráfica (ventanas, widgets, estilos) |
+| `pyodbc` | Conexión a SQL Server |
+
+> Las dependencias de la librería estándar utilizadas son: `sys`, `re`, `datetime`, `typing`, `os`.
 
 ## 📦 Instalación
 
@@ -49,12 +59,36 @@ python main.py
 ## 📂 Estructura del Proyecto
 ```
 proveedores/
-├── anto_modulos/        # Módulos auxiliares (estilo, centrado de ventana, etc.)
-├── assets/              # Imágenes e iconos
-├── main.py              # Archivo principal
-├── requirements.txt     # Dependencias del proyecto
-└── README.md            # Este archivo
+├── anto_modulos/
+│   ├── anto_conexion.py          # ✅ Conexión a SQL Server y funciones de acceso a datos
+│   ├── centrar_ventana.py        # ✅ Utilidad para centrar la ventana en pantalla
+│   ├── resources.py              # ✅ Rutas a recursos (iconos, imágenes) compatibles con PyInstaller
+│   ├── style.py                  # ✅ Hoja de estilo global (PyQt5)
+│   ├── anto_conexionCAMBIOS.py   # ⚠️ No utilizado (versión alternativa de conexión)
+│   └── nuevo_regimen_modulo.py   # ⚠️ No utilizado (módulo legacy)
+├── Source/                       # Recursos estáticos (iconos, imágenes)
+├── old_version/                  # Versiones anteriores del proyecto
+├── main.py                       # Archivo principal de la aplicación
+├── pyv2.py                       # ⚠️ No utilizado (versión anterior de la UI)
+├── main.spec                     # Configuración de PyInstaller
+└── README.md                     # Este archivo
 ```
+
+## 🗄️ Procedimientos Almacenados (SQL Server)
+
+La aplicación interactúa con la base de datos `Gestion` en el servidor `SQL01` mediante los siguientes procedimientos y consultas:
+
+| Función Python | Tipo | Objeto SQL |
+|---|---|---|
+| `insertar_nuevo_registro()` | Stored Procedure | `AntoInsert_Proveedores_By_CUIL` |
+| `actualizar_registro()` | Stored Procedure | `dbo.AntoUpdate_Proveedores` |
+| `obtener_datos_por_cuil()` | Query directa | `SELECT … FROM Proveedores WHERE CUIL = ?` |
+| `ejecutar_procedimiento_almacenado()` | Query directa | `SELECT COUNT(1) FROM Proveedores WHERE CUIL = ?` |
+
+**Drivers ODBC probados (en orden de prioridad):**
+1. `SQL Server Native Client 11.0`
+2. `SQL Server Native Client 10.0`
+3. `SQL Server` (legacy)
 ## Pyinstaller
    ```bash
 pyinstaller --onefile --noconsole --icon "Source/icon.ico" --add-data "Source;Source" --add-data "anto_modulos;anto_modulos" main.py
