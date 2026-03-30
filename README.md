@@ -2,116 +2,279 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)
 ![PyQt5](https://img.shields.io/badge/PyQt5-5.15.9-41CD52?logo=qt&logoColor=white)
-![SQL Server](https://img.shields.io/badge/SQL%20Server-2014-red?logo=microsoft-sql-server&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL%20Server-2014+-red?logo=microsoft-sql-server&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Status](https://img.shields.io/badge/Status-En%20Desarrollo-orange)
 
 ## 📌 Descripción
-**Gestión de Proveedores** es una aplicación de escritorio desarrollada en **Python** con **PyQt5**, diseñada para facilitar la administración y actualización de datos de proveedores.  
-Permite consultar, agregar y editar información directamente desde una base de datos **SQL Server**, ofreciendo una interfaz intuitiva y profesional.
+
+**Gestión de Proveedores** es una aplicación de escritorio desarrollada en **Python** con **PyQt5**, diseñada para administrar el padrón de proveedores de una organización. Permite buscar, registrar y editar proveedores por CUIL con conexión directa a una base de datos **SQL Server** usando autenticación Windows integrada.
+
+---
 
 ## ✨ Características
-- 🔍 **Búsqueda por CUIL** con conexión directa a SQL Server.
-- ✏️ **Alta, baja y modificación** de proveedores.
-- 📋 **Validación automática** de datos antes de insertar o actualizar.
-- 🖥 **Interfaz moderna y responsiva** con estilos personalizados.
-- ⚡ **Optimizado** para entornos Windows 10+.
 
-## 🛠 Tecnologías Utilizadas
-- **Lenguaje**: [Python 3.10+](https://www.python.org/)
-- **Interfaz gráfica**: [PyQt5](https://riverbankcomputing.com/software/pyqt/intro)
-- **Base de datos**: [Microsoft SQL Server 2014](https://www.microsoft.com/es-es/sql-server/sql-server-2014) — conexión vía `pyodbc` con autenticación Windows (`Trusted_Connection`)
-- **Empaquetado**: [PyInstaller](https://pyinstaller.org/) — genera ejecutable `.exe` standalone
-- **Control de versiones**: [Git](https://git-scm.com/)
+- 🔍 **Búsqueda por CUIL** (11 dígitos) con validación en tiempo real.
+- ➕ **Alta de nuevos proveedores** mediante formulario completo.
+- ✏️ **Edición de registros existentes** con precarga automática de datos.
+- 📋 **Validación de datos** antes de insertar o actualizar (CUIL, email, campos obligatorios).
+- 🎨 **Interfaz oscura moderna** con estilos QSS parametrizables.
+- 🏗️ **Compatible con PyInstaller** para distribuir como `.exe` standalone.
+- 🖥️ **Centrado automático** de ventanas en pantalla.
 
-## 📦 Dependencias Python
+---
 
-| Paquete | Uso |
-|---|---|
-| `PyQt5` | Interfaz gráfica (ventanas, widgets, estilos) |
-| `pyodbc` | Conexión a SQL Server |
+## 🛠️ Tecnologías
 
-> Las dependencias de la librería estándar utilizadas son: `sys`, `re`, `datetime`, `typing`, `os`.
+| Tecnología | Versión | Uso |
+|---|---|---|
+| [Python](https://www.python.org/) | 3.10+ | Lenguaje principal |
+| [PyQt5](https://riverbankcomputing.com/software/pyqt/) | 5.15+ | Interfaz gráfica |
+| [pyodbc](https://github.com/mkleehammer/pyodbc) | - | Conexión a SQL Server |
+| [Microsoft SQL Server](https://www.microsoft.com/sql-server) | 2014+ | Base de datos |
+| [PyInstaller](https://pyinstaller.org/) | - | Empaquetado a `.exe` |
 
-## 📦 Instalación
+**Módulos estándar usados:** `sys`, `re`, `datetime`, `typing`, `os`
 
-```bash
-# Clonar el repositorio
-git clone https://github.com/WolfWilson/proveedores.git
-cd proveedores
-
-# Crear y activar entorno virtual
-python -m venv venv
-venv\Scripts\activate   # En Windows
-
-# Instalar dependencias
-pip install -r requirements.txt
-```
-
-## 🚀 Uso
-```bash
-python main.py
-```
-1. Ingresa el **CUIL** del proveedor.
-2. Consulta o edita la información existente.
-3. Guarda los cambios en la base de datos.
+---
 
 ## 📂 Estructura del Proyecto
+
 ```
 proveedores/
+├── main.py                        # ✅ Punto de entrada — UI principal (VentanaNuevo + CUILSearchApp)
+├── pyv2.py                        # ⚠️ Versión anterior de la UI (no activo)
+├── main.spec                      # Configuración de PyInstaller
+│
 ├── anto_modulos/
-│   ├── anto_conexion.py          # ✅ Conexión a SQL Server y funciones de acceso a datos
-│   ├── centrar_ventana.py        # ✅ Utilidad para centrar la ventana en pantalla
-│   ├── resources.py              # ✅ Rutas a recursos (iconos, imágenes) compatibles con PyInstaller
-│   ├── style.py                  # ✅ Hoja de estilo global (PyQt5)
-│   ├── anto_conexionCAMBIOS.py   # ⚠️ No utilizado (versión alternativa de conexión)
-│   └── nuevo_regimen_modulo.py   # ⚠️ No utilizado (módulo legacy)
-├── Source/                       # Recursos estáticos (iconos, imágenes)
-├── old_version/                  # Versiones anteriores del proyecto
-├── main.py                       # Archivo principal de la aplicación
-├── pyv2.py                       # ⚠️ No utilizado (versión anterior de la UI)
-├── main.spec                     # Configuración de PyInstaller
-└── README.md                     # Este archivo
+│   ├── __init__.py
+│   ├── anto_conexion.py           # ✅ Conexión SQL Server + CRUD (funciones activas)
+│   ├── anto_conexionCAMBIOS.py    # ⚠️ Conexión alternativa (servidor PC-2193 / DB Aportes)
+│   ├── centrar_ventana.py         # ✅ Centra cualquier QWidget en la pantalla principal
+│   ├── nuevo_regimen_modulo.py    # ⚠️ Módulo legacy (conexión a DB Aportes)
+│   ├── resources.py               # ✅ Resuelve rutas de assets (compatible con PyInstaller)
+│   └── style.py                   # ✅ Hoja de estilo QSS parametrizable (tema oscuro)
+│
+├── Source/                        # Assets estáticos
+│   ├── icon.ico                   # Ícono del ejecutable
+│   ├── userprofile4.png           # Ícono de la ventana principal
+│   ├── down-arrow_15775882.png    # Flecha del QDateEdit
+│   └── up-down-arrow_15776044.png # Flecha alternativa
+│
+├── old_version/
+│   └── gestion_proveedoresui_V1.py  # Versión 1 archivada
+│
+└── README.md
 ```
 
-## 🗄️ Procedimientos Almacenados (SQL Server)
+---
 
-La aplicación interactúa con la base de datos `Gestion` en el servidor `SQL01` mediante los siguientes procedimientos y consultas:
+## ⚙️ Configuración de Base de Datos
 
-| Función Python | Tipo | Objeto SQL |
-|---|---|---|
-| `insertar_nuevo_registro()` | Stored Procedure | `AntoInsert_Proveedores_By_CUIL` |
-| `actualizar_registro()` | Stored Procedure | `dbo.AntoUpdate_Proveedores` |
-| `obtener_datos_por_cuil()` | Query directa | `SELECT … FROM Proveedores WHERE CUIL = ?` |
-| `ejecutar_procedimiento_almacenado()` | Query directa | `SELECT COUNT(1) FROM Proveedores WHERE CUIL = ?` |
+La conexión está definida en `anto_modulos/anto_conexion.py`:
 
-**Drivers ODBC probados (en orden de prioridad):**
+```python
+server   = 'SQL01'      # ← Nombre del servidor SQL Server
+database = 'Gestion'    # ← Nombre de la base de datos
+# Autenticación: Windows integrada (Trusted_Connection=yes)
+```
+
+**Drivers ODBC intentados en orden de prioridad:**
 1. `SQL Server Native Client 11.0`
 2. `SQL Server Native Client 10.0`
 3. `SQL Server` (legacy)
-## Pyinstaller
-   ```bash
-pyinstaller --onefile --noconsole --icon "Source/icon.ico" --add-data "Source;Source" --add-data "anto_modulos;anto_modulos" main.py
-   ```
+
+> Para cambiar el servidor o la base de datos, editar únicamente `anto_conexion.py`.  
+> Si se migra a autenticación por usuario/contraseña, reemplazar `Trusted_Connection=yes` por `UID=...;PWD=...`.
+
+---
+
+## 🗄️ Objetos SQL Server Utilizados
+
+| Función Python | Tipo SQL | Objeto |
+|---|---|---|
+| `ejecutar_procedimiento_almacenado(cuil)` | Query | `SELECT COUNT(1) FROM Proveedores WHERE CUIL = ?` |
+| `obtener_datos_por_cuil(cuil)` | Query | `SELECT … FROM Proveedores WHERE CUIL = ?` |
+| `insertar_nuevo_registro(…)` | Stored Procedure | `AntoInsert_Proveedores_By_CUIL` |
+| `actualizar_registro(…)` | Stored Procedure | `dbo.AntoUpdate_Proveedores` |
+
+### Columnas de la tabla `Proveedores`
+
+| Columna SQL | Campo en formulario | Tipo |
+|---|---|---|
+| `CUIL` | CUIL (solo lectura en edición) | `VARCHAR(11)` |
+| `RAZON_SOCIAL` | Razón Social | `VARCHAR` |
+| `PROVINCIA` | Provincia | `VARCHAR` (ComboBox) |
+| `LOCALIDAD` | Localidad | `VARCHAR` |
+| `CALLE` | Calle | `VARCHAR` |
+| `CALLE_NRO` | Número | `VARCHAR` (solo dígitos) |
+| `DPTO` | Departamento | `VARCHAR` |
+| `PISO` | Piso | `VARCHAR` (solo dígitos) |
+| `EMAIL` | Email | `VARCHAR` |
+| `CONDICION_CTA` | Condición CTA | `VARCHAR` (ComboBox) |
+| `CONDICION_EN_AFIP` | Condición AFIP | `VARCHAR` (ComboBox) |
+| `CONDICION_DGR` | Condición DGR | `VARCHAR` (ComboBox) |
+| `CONDICION_GCIA` | Condición GCIA | `VARCHAR` (ComboBox) |
+| `CONDICION_EMPLEADOR` | Condición Empleador | `VARCHAR` (ComboBox) |
+| `FORMA_JURIDICA` | Forma Jurídica | `VARCHAR` (ComboBox) |
+| `FECHA_ULT_LIB_DEUDA` | Fecha Libre Deuda | `DATE` |
+
+---
+
+## 📋 Opciones de ComboBoxes
+
+| Campo | Opciones |
+|---|---|
+| **Condición CTA** | Activo, Baja |
+| **Condición AFIP** | Monotributista, No Informado, Condición B, Exento, Responsable Inscripto, Responsable No Inscripto, Código Invalido, Null |
+| **Condición DGR** | Inscripto, No Inscripto, No Informado, Exento, No Sujeto a Retención, Convenio Multilateral, Condición C, Null |
+| **Condición GCIA** | Inscripto, No Inscripto, No Informado, Exento, Monotributista, No Sujeto a Retención, Convenio Multilateral, Condición D, Código Inválido, Null |
+| **Condición Empleador** | Empleador, No Empleador, No Informado |
+| **Forma Jurídica** | Persona Jurídica, Colectiva, Responsabilidad Limitada, Sociedad Anónima, Mutual, Asociación, No Informado, Asociación Civil, Cooperativa, En Formación, Empresa del Estado, Sociedad de Derecho, No Empleador, Organismo Público, Agrupación de Colaboración Empresaria, Fundación, Unipersonal, Otros |
+
+---
+
+## 📦 Instalación
+
+### 1. Prerrequisitos
+
+- Python 3.10 o superior instalado.
+- Driver ODBC para SQL Server instalado en el equipo ([descargar](https://learn.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server)).
+- Acceso de red al servidor `SQL01` con permisos de Windows sobre la base `Gestion`.
+
+### 2. Clonar y configurar entorno
+
+```bash
+git clone https://github.com/WolfWilson/proveedores.git
+cd proveedores
+
+python -m venv venv
+venv\Scripts\activate
+
+pip install -r requirements.txt
+```
+
+### 3. Ejecutar
+
+```bash
+python main.py
+```
+
+---
+
+## 🚀 Flujo de Uso
+
+```
+┌─────────────────────────────────────┐
+│          CUILSearchApp              │
+│  [Input CUIL 11 dígitos]            │
+│  [Buscar]                           │
+│                                     │
+│  Si EXISTE → habilita [Editar]      │
+│  Si NO existe → habilita [Nuevo]    │
+└───────────────┬─────────────────────┘
+                │
+        ┌───────┴────────┐
+        ▼                ▼
+   [Nuevo]           [Editar]
+   VentanaNuevo()    VentanaNuevo(datos=…)
+   insertar_nuevo_   actualizar_
+   registro()        registro()
+```
+
+1. Ingresar el CUIL (11 dígitos) y presionar **Buscar**.
+2. Si el CUIL **existe**: se habilita **Editar** — abre formulario precargado.
+3. Si el CUIL **no existe**: se habilita **Nuevo** — abre formulario vacío con el CUIL fijado.
+4. Completar/modificar los campos y presionar **OK** para guardar.
+
+---
+
+## 🏗️ Guía de Modificaciones
+
+### Cambiar servidor o base de datos
+
+Editar `anto_modulos/anto_conexion.py`:
+```python
+server   = 'MI_SERVIDOR'   # nombre o IP
+database = 'MI_BASE'
+```
+
+### Agregar un nuevo campo al formulario
+
+1. **`anto_modulos/anto_conexion.py`** — agregar la columna al `SELECT` en `obtener_datos_por_cuil()` y al payload en `insertar_nuevo_registro()` / `actualizar_registro()`.
+2. **`main.py – VentanaNuevo.__init__()`** — añadir el widget (`QLineEdit`, `QComboBox`, etc.) y su fila en el `QFormLayout`.
+3. **`main.py – VentanaNuevo.cargar_datos()`** — mapear la nueva clave del diccionario al widget.
+4. **`main.py – VentanaNuevo._validar_formulario()`** — agregar validación si es obligatorio.
+5. **`main.py – VentanaNuevo.guardar_nuevo_registro()`** — leer el valor del widget y pasarlo a las funciones de capa de datos.
+6. **SP SQL Server** — actualizar `AntoInsert_Proveedores_By_CUIL` y `AntoUpdate_Proveedores` para aceptar el nuevo parámetro.
+
+### Agregar una opción a un ComboBox
+
+En `main.py`, buscar el `QComboBox` correspondiente y añadir el ítem en `addItems([…])`.  
+Si el valor viene de la BD, asegurarse de que exista también en el SP.
+
+### Cambiar el tema visual
+
+En `anto_modulos/style.py`, la función `build_style()` acepta parámetros para colores, radios y tipografía. El objeto `STYLE` exportado se aplica en `main.py` con `app.setStyleSheet(STYLE)`.
+
+### Agregar validaciones de campo
+
+Agregar lógica en `VentanaNuevo._validar_formulario()` en `main.py`. El método retorna un `str` con el mensaje de error o `None` si todo es válido.
+
+### Cambiar íconos o imágenes
+
+Reemplazar archivos en la carpeta `Source/` y actualizar las constantes en `anto_modulos/resources.py`:
+```python
+ICON_MAIN       = resource_path("Source", "mi_icono.png")
+DATE_ARROW_DOWN = resource_path("Source", "mi_flecha.png")
+```
+
+---
+
+## 📦 Empaquetar con PyInstaller
+
+```bash
+pyinstaller --onefile --noconsole \
+  --icon "Source/icon.ico" \
+  --add-data "Source;Source" \
+  --add-data "anto_modulos;anto_modulos" \
+  main.py
+```
+
+El ejecutable generado queda en `dist/main.exe`. La función `resource_path()` en `resources.py` resuelve rutas correctamente tanto en desarrollo como dentro del `.exe`.
+
+---
+
+## ⚠️ Archivos No Activos
+
+| Archivo | Estado | Notas |
+|---|---|---|
+| `pyv2.py` | Versión anterior de la UI | Precursor de `main.py`, sin uso activo |
+| `anto_modulos/anto_conexionCAMBIOS.py` | No importado | Conecta a servidor `PC-2193` / DB `Aportes` |
+| `anto_modulos/nuevo_regimen_modulo.py` | No importado | Módulo legacy para DB `Aportes` |
+| `old_version/gestion_proveedoresui_V1.py` | Archivado | Primera versión del proyecto |
+
+---
 
 ## 🤝 Contribuir
+
 1. Haz un **fork** del repositorio.
-2. Crea una rama para tu función o corrección:
+2. Crea una rama para tu cambio:
    ```bash
-   git checkout -b mi-nueva-funcion
+   git checkout -b feature/mi-cambio
    ```
-3. Haz commit de tus cambios:
+3. Realiza los cambios y haz commit:
    ```bash
-   git commit -m "Agrega mi nueva función"
+   git commit -m "feat: descripción del cambio"
    ```
-4. Sube la rama a tu fork:
-   ```bash
-   git push origin mi-nueva-funcion
-   ```
-5. Abre un **Pull Request**.
+4. Sube la rama y abre un **Pull Request**.
+
+---
 
 ## 📄 Licencia
+
 Este proyecto está bajo la licencia [MIT](LICENSE).
 
 ---
-💡 *Desarrollado para optimizar y modernizar la gestión de proveedores.*
+
+*Desarrollado para optimizar y modernizar la gestión de proveedores.*
