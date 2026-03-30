@@ -7,11 +7,11 @@ import re
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from PyQt5.QtCore import Qt, QDate, QRegExp
+from PyQt5.QtCore import Qt, QDate, QRegExp, pyqtSignal
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox,
-    QDialog, QFormLayout, QDialogButtonBox, QComboBox, QHBoxLayout, QDateEdit, QCheckBox
+    QFormLayout, QComboBox, QHBoxLayout, QDateEdit, QCheckBox, QScrollArea, QFrame
 )
 
 from anto_modulos.anto_conexion import (
@@ -61,20 +61,17 @@ def keys_of(obj: Any):
             return ["<sin claves>"]
 
 # ──────────────────────────────
-# Diálogo Nuevo/Edición
+# Panel de formulario (Nuevo / Edición)
 # ──────────────────────────────
-class VentanaNuevo(QDialog):
-    def __init__(self, cuil_previamente_buscado: str, parent: Optional[QWidget] = None, datos: Optional[Dict] = None):
+class VentanaNuevo(QWidget):
+    guardado = pyqtSignal()  # emitido tras un guardado exitoso
+
+    def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
 
-        self.setWindowTitle("Editar Registro" if datos else "Nuevo Registro")
-        self.setModal(True)
-        self.setFixedWidth(420)
-
-        self.datos = datos or {}
-        self._cuil_inicial = cuil_previamente_buscado.strip()
-        debug("Init VentanaNuevo con CUIL", self._cuil_inicial)
-        debug("Datos recibidos (tipo / claves)", (type(self.datos).__name__, keys_of(self.datos)))
+        self.datos: Dict = {}
+        self._cuil_inicial: str = ""
+        self._modo: Optional[str] = None  # "nuevo" | "editar"
 
         layout = QFormLayout(self)
 
@@ -168,28 +165,89 @@ class VentanaNuevo(QDialog):
         fecha_layout.addWidget(self.chk_sin_fecha)
         layout.addRow("Fecha Libre Deuda:", fecha_layout)
 
-        # Botones OK/Cancel
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, parent=self)
-        self.buttons.accepted.connect(self.guardar_nuevo_registro)
-        self.buttons.rejected.connect(self.reject)
-        layout.addRow(self.buttons)
+        # Botones Guardar / Cancelar
+        btn_layout = QHBoxLayout()
+        self.btn_guardar = QPushButton("Guardar", self)
+        self.btn_cancelar = QPushButton("Cancelar", self)
+        self.btn_guardar.clicked.connect(self.guardar_nuevo_registro)
+        self.btn_cancelar.clicked.connect(self.desactivar)
+        btn_layout.addWidget(self.btn_guardar)
+        btn_layout.addWidget(self.btn_cancelar)
+        layout.addRow(btn_layout)
 
-        # Cargar datos si es edición
-        if self.datos:
-            self.cargar_datos(self.datos)
+        # Inicia deshabilitado hasta que se busque un CUIL
+        self.setEnabled(False)
 
-    def showEvent(self, e) -> None:
-        super().showEvent(e)
-        center_on_screen(self)
+    # ── Métodos públicos de activación ──
+
+    def mostrar_datos(self, cuil: str, datos: Optional[Dict]) -> None:
+        """Carga datos en el panel sin habilitarlo (solo lectura visual)."""
+        self._limpiar_campos()
+        self._cuil_inicial = cuil.strip()
+        self.cuil.setText(self._cuil_inicial)
+        self.datos = datos or {}
+        self._modo = None
+        if datos:
+            self.cargar_datos(datos)
+        self.setEnabled(False)
+        debug("Formulario mostrando datos (bloqueado)", self._cuil_inicial)
+
+    def activar_nuevo(self, cuil: str) -> None:
+        self._limpiar_campos()
+        self._cuil_inicial = cuil.strip()
+        self.cuil.setText(self._cuil_inicial)
+        self.datos = {}
+        self._modo = "nuevo"
+        self.setEnabled(True)
+        self._toggle_fecha(self.chk_sin_fecha.isChecked())
+        debug("Formulario activado en modo NUEVO para CUIL", self._cuil_inicial)
+
+    def activar_editar(self, cuil: str, datos: Dict) -> None:
+        # El panel ya tiene los datos cargados desde mostrar_datos(); solo habilitarlo
+        self._cuil_inicial = cuil.strip()
+        self.cuil.setText(self._cuil_inicial)
+        self.datos = datos
+        self._modo = "editar"
+        self.setEnabled(True)
+        self._toggle_fecha(self.chk_sin_fecha.isChecked())
+        debug("Formulario habilitado en modo EDITAR para CUIL", self._cuil_inicial)
+
+    def desactivar(self) -> None:
+        self.setEnabled(False)
+        self._limpiar_campos()
+        self._modo = None
+        self.datos = {}
+        self._cuil_inicial = ""
+        debug("Formulario desactivado")
+
+    def _limpiar_campos(self) -> None:
+        self.razon_social.clear()
+        self.cuil.clear()
+        self.localidad.clear()
+        self.calle.clear()
+        self.calle_nro.clear()
+        self.dpto.clear()
+        self.piso.clear()
+        self.email.clear()
+        self.provincia.setCurrentIndex(0)
+        self.condicion_cta.setCurrentIndex(0)
+        self.condicion_afip.setCurrentIndex(0)
+        self.condicion_dgr.setCurrentIndex(0)
+        self.condicion_gcia.setCurrentIndex(0)
+        self.condicion_empleador.setCurrentIndex(0)
+        self.forma_juridica.setCurrentIndex(0)
+        self.chk_sin_fecha.setChecked(True)
+        self._fecha_db: Optional[QDate] = None  # fecha original de la BD
 
     def _toggle_fecha(self, checked: bool) -> None:
-        """Habilita/deshabilita el selector de fecha y muestra vacío cuando está inactivo."""
+        """Habilita/deshabilita el selector de fecha. Al desmarcar restaura la fecha de la BD, no la actual."""
         if checked:
             self.fecha_ult_lib_deuda.setDate(QDate(1900, 1, 1))  # muestra vacío
             self.fecha_ult_lib_deuda.setDisabled(True)
         else:
-            if self.fecha_ult_lib_deuda.date() == QDate(1900, 1, 1):
-                self.fecha_ult_lib_deuda.setDate(QDate.currentDate())
+            # Restaurar la fecha original de la BD si existe; si no, usar la actual
+            restaurar = self._fecha_db if (self._fecha_db is not None and self._fecha_db.isValid()) else QDate.currentDate()
+            self.fecha_ult_lib_deuda.setDate(restaurar)
             self.fecha_ult_lib_deuda.setEnabled(True)
 
     def set_combobox_value(self, combobox: QComboBox, value: str) -> None:
@@ -210,7 +268,9 @@ class VentanaNuevo(QDialog):
                 warn(f"CUIL provisto en datos difiere del buscado: datos={cuil_value} vs buscado={self._cuil_inicial}")
             self.cuil.setText(cuil_value)
         else:
-            debug("cargar_datos(): no vino 'cuil' en datos, se mantiene el del constructor", self._cuil_inicial)
+            # La query no devuelve CUIL; usar el valor buscado
+            self.cuil.setText(self._cuil_inicial)
+            debug("cargar_datos(): CUIL tomado del buscador", self._cuil_inicial)
 
         # Campos texto
         for label, widget, key in [
@@ -243,20 +303,24 @@ class VentanaNuevo(QDialog):
         # Fecha
         fecha = (datos.get("fecha_ult_lib_deuda") if hasattr(datos, "get") else None)
         if isinstance(fecha, datetime):
+            self._fecha_db = to_qdate(fecha)
             self.chk_sin_fecha.setChecked(False)
-            self.fecha_ult_lib_deuda.setDate(to_qdate(fecha))
+            self.fecha_ult_lib_deuda.setDate(self._fecha_db)
             debug("Set fecha desde datetime", fecha)
         elif isinstance(fecha, str):
             qd = QDate.fromString(fecha, DATE_FMT_DB)
             if qd.isValid():
+                self._fecha_db = qd
                 self.chk_sin_fecha.setChecked(False)
-                self.fecha_ult_lib_deuda.setDate(qd)
+                self.fecha_ult_lib_deuda.setDate(self._fecha_db)
                 debug("Set fecha desde str", fecha)
             else:
+                self._fecha_db = None
                 self.chk_sin_fecha.setChecked(True)
                 warn("Formato de fecha no válido recibido desde DB.")
         else:
             # fecha es None en la DB → marcar "Sin fecha"
+            self._fecha_db = None
             self.chk_sin_fecha.setChecked(True)
             debug("Fecha NULL en DB, sin fecha cargada", None)
 
@@ -315,20 +379,19 @@ class VentanaNuevo(QDialog):
         else:
             fecha_ult_lib_deuda = self.fecha_ult_lib_deuda.date().toString(DATE_FMT_DB)
 
-        # Debug útil
-        print("[DEBUG] Guardar -> modo:", "EDICION" if self.datos else "INSERCION")
-        print("[DEBUG] Payload ordenado:", cuil, razon_social, provincia, localidad, calle, calle_nro,
+        print("[DEBUG] Guardar -> modo:", self._modo)
+        print("[DEBUG] Payload:", cuil, razon_social, provincia, localidad, calle, calle_nro,
               dpto, piso, email, condicion_cta, condicion_afip, condicion_dgr, condicion_gcia,
               condicion_empleador, forma_juridica, fecha_ult_lib_deuda)
 
         try:
-            if self.datos:  # EDICIÓN (posicional)
+            if self._modo == "editar":
                 exito = actualizar_registro(
                     cuil, razon_social, provincia, localidad, calle, calle_nro, dpto, piso, email,
                     condicion_cta, condicion_afip, condicion_dgr, condicion_gcia,
                     condicion_empleador, forma_juridica, fecha_ult_lib_deuda
                 )
-            else:  # INSERCIÓN (posicional, con None final si tu función lo requiere)
+            else:
                 exito = insertar_nuevo_registro(
                     cuil, razon_social, provincia, localidad, calle, calle_nro, dpto, piso, email,
                     condicion_cta, condicion_afip, condicion_dgr, condicion_gcia,
@@ -344,7 +407,8 @@ class VentanaNuevo(QDialog):
 
         if exito:
             QMessageBox.information(self, "Éxito", "Registro guardado con éxito.")
-            self.accept()
+            self.desactivar()
+            self.guardado.emit()
         else:
             QMessageBox.critical(self, "Error", "No se pudo guardar el registro.")
 
@@ -357,29 +421,49 @@ class CUILSearchApp(QWidget):
         self.init_ui()
 
     def init_ui(self) -> None:
-        self.setWindowTitle("Buscar CUIL")
-        self.setFixedSize(320, 240)
-        self.setWindowIcon(QIcon("userprofile4.png"))
+        self.setWindowTitle("Gestión de Proveedores")
+        self.setMinimumSize(480, 800)
 
-        layout = QVBoxLayout(self)
+        root_layout = QVBoxLayout(self)
+        root_layout.setSpacing(8)
+        root_layout.setContentsMargins(12, 12, 12, 12)
 
-        self.cuil_input = QLineEdit(self); self.cuil_input.setPlaceholderText("Ingrese el CUIL (11 dígitos)")
+        # ── Búsqueda ──
+        search_layout = QHBoxLayout()
+        self.cuil_input = QLineEdit(self)
+        self.cuil_input.setPlaceholderText("Ingrese el CUIL (11 dígitos)")
         self.cuil_input.setValidator(QRegExpValidator(QRegExp(r"\d{0,11}"), self))
-        layout.addWidget(self.cuil_input)
-
+        search_layout.addWidget(self.cuil_input)
         self.search_button = QPushButton("Buscar", self)
         self.search_button.clicked.connect(self.buscar_cuil)
-        layout.addWidget(self.search_button)
+        search_layout.addWidget(self.search_button)
+        root_layout.addLayout(search_layout)
 
-        self.nuevo_button = QPushButton("Nuevo", self); self.nuevo_button.setObjectName("btnNuevo")
-        self.nuevo_button.setEnabled(False); self.nuevo_button.clicked.connect(self.mostrar_ventana_nuevo)
-        layout.addWidget(self.nuevo_button)
+        # ── Resultado y acciones ──
+        self.result_label = QLabel("", self)
+        root_layout.addWidget(self.result_label)
 
-        self.editar_button = QPushButton("Editar", self); self.editar_button.setObjectName("btnEditar")
-        self.editar_button.setEnabled(False); self.editar_button.clicked.connect(self.mostrar_ventana_editar)
-        layout.addWidget(self.editar_button)
+        btn_layout = QHBoxLayout()
+        self.nuevo_button = QPushButton("Nuevo", self)
+        self.nuevo_button.setObjectName("btnNuevo")
+        self.nuevo_button.setEnabled(False)
+        self.nuevo_button.clicked.connect(self._activar_nuevo)
+        btn_layout.addWidget(self.nuevo_button)
+        self.editar_button = QPushButton("Editar", self)
+        self.editar_button.setObjectName("btnEditar")
+        self.editar_button.setEnabled(False)
+        self.editar_button.clicked.connect(self._activar_editar)
+        btn_layout.addWidget(self.editar_button)
+        root_layout.addLayout(btn_layout)
 
-        self.result_label = QLabel("", self); layout.addWidget(self.result_label)
+        # ── Formulario embebido (siempre visible, inicia deshabilitado) ──
+        self.form_panel = VentanaNuevo(parent=self)
+        self.form_panel.guardado.connect(self._on_guardado)
+        scroll = QScrollArea(self)
+        scroll.setWidget(self.form_panel)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        root_layout.addWidget(scroll)
 
     def showEvent(self, e) -> None:
         super().showEvent(e)
@@ -389,56 +473,76 @@ class CUILSearchApp(QWidget):
         cuil = self.cuil_input.text().strip()
         debug("Buscar CUIL", cuil)
         if len(cuil) != 11:
-            self.mostrar_mensaje_error("El CUIL debe tener 11 dígitos.")
+            QMessageBox.critical(self, "Error", "El CUIL debe tener 11 dígitos.")
             return
+
+        # Desactivar formulario si estaba activo
+        if self.form_panel.isEnabled():
+            self.form_panel.desactivar()
 
         try:
             resultado = ejecutar_procedimiento_almacenado(cuil)
             debug("Resultado SP existe?", resultado)
         except Exception as e:
-            self.mostrar_mensaje_error(f"Error al consultar: {e}")
+            QMessageBox.critical(self, "Error", f"Error al consultar: {e}")
             return
 
         if resultado == 1:
-            self.result_label.setText(f"El CUIL {cuil} existe en la base de datos.")
-            self.editar_button.setEnabled(True); self.nuevo_button.setEnabled(False)
+            self.result_label.setText(f"CUIL {cuil} encontrado en la base de datos.")
+            self.editar_button.setEnabled(True)
+            self.nuevo_button.setEnabled(False)
+            # Cargar datos en el panel (deshabilitado, solo lectura visual)
+            try:
+                datos = obtener_datos_por_cuil(cuil)
+            except Exception as e:
+                datos = None
+                warn(f"No se pudieron precargar datos: {e}")
+            self.form_panel.mostrar_datos(cuil, datos)
+            self._datos_cache = datos  # guardar para no re-consultar al editar
         else:
-            self.result_label.setText(f"El CUIL {cuil} no existe en la base de datos.")
-            self.nuevo_button.setEnabled(True); self.editar_button.setEnabled(False)
+            self.result_label.setText(f"CUIL {cuil} no encontrado en la base de datos.")
+            self.nuevo_button.setEnabled(True)
+            self.editar_button.setEnabled(False)
+            self._datos_cache = None
+            self.form_panel.mostrar_datos(cuil, None)
 
-    def mostrar_ventana_nuevo(self) -> None:
+    def _activar_nuevo(self) -> None:
         cuil = self.cuil_input.text().strip()
-        debug("Abrir NUEVO para CUIL", cuil)
-        dlg = VentanaNuevo(cuil, self)
-        dlg.exec_()
+        debug("Activar NUEVO para CUIL", cuil)
+        self.form_panel.activar_nuevo(cuil)
 
-    def mostrar_ventana_editar(self) -> None:
+    def _activar_editar(self) -> None:
         cuil = self.cuil_input.text().strip()
-        debug("Abrir EDITAR para CUIL", cuil)
-        try:
-            datos = obtener_datos_por_cuil(cuil)
-            debug("obtener_datos_por_cuil tipo/claves", (type(datos).__name__, keys_of(datos) if datos else []))
-        except Exception as e:
-            self.mostrar_mensaje_error(f"Error al obtener datos: {e}")
-            return
-
+        datos = getattr(self, "_datos_cache", None)
         if datos:
-            dlg = VentanaNuevo(cuil, self, datos=datos)
-            dlg.exec_()
+            self.form_panel.activar_editar(cuil, datos)
         else:
-            QMessageBox.critical(self, "Error", "No se pudieron cargar los datos para editar.")
+            # Fallback: re-consultar si el cache no está
+            debug("Cache vacío, re-consultando datos para CUIL", cuil)
+            try:
+                datos = obtener_datos_por_cuil(cuil)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Error al obtener datos: {e}")
+                return
+            if datos:
+                self.form_panel.activar_editar(cuil, datos)
+            else:
+                QMessageBox.critical(self, "Error", "No se pudieron cargar los datos para editar.")
 
-    def mostrar_mensaje_error(self, mensaje: str) -> None:
-        QMessageBox.critical(self, "Error", mensaje)
+    def _on_guardado(self) -> None:
+        self.nuevo_button.setEnabled(False)
+        self.editar_button.setEnabled(False)
+        self.result_label.setText("")
+        self.cuil_input.clear()
 
 # ──────────────────────────────
 # Main
 # ──────────────────────────────
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyleSheet(STYLE)  # opcional, si no te importa el style, comentalo
+    app.setStyleSheet(STYLE)
     win = CUILSearchApp()
     win.setWindowIcon(QIcon(ICON_MAIN))
     win.show()
-    sys.exit(app.exec_())  # PyQt5 usa exec_()
+    sys.exit(app.exec_())
 
