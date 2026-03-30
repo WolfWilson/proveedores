@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt, QDate, QRegExp
 from PyQt5.QtGui import QIcon, QRegExpValidator
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox,
-    QDialog, QFormLayout, QDialogButtonBox, QComboBox, QHBoxLayout, QDateEdit
+    QDialog, QFormLayout, QDialogButtonBox, QComboBox, QHBoxLayout, QDateEdit, QCheckBox
 )
 
 from anto_modulos.anto_conexion import (
@@ -151,12 +151,22 @@ class VentanaNuevo(QDialog):
         ])
         layout.addRow("Forma Jurídica:", self.forma_juridica)
 
-        # Fecha Libre Deuda
+        # Fecha Libre Deuda (opcional — puede enviarse como NULL)
+        _SENTINEL_DATE = QDate(1900, 1, 1)  # fecha centinela = "sin valor"
         self.fecha_ult_lib_deuda = QDateEdit(self)
         self.fecha_ult_lib_deuda.setDisplayFormat(DATE_FMT_UI)
         self.fecha_ult_lib_deuda.setCalendarPopup(True)
-        self.fecha_ult_lib_deuda.setDate(QDate.currentDate())
-        layout.addRow("Fecha Libre Deuda:", self.fecha_ult_lib_deuda)
+        self.fecha_ult_lib_deuda.setMinimumDate(_SENTINEL_DATE)
+        self.fecha_ult_lib_deuda.setSpecialValueText(" ")  # muestra vacío cuando está en la fecha centinela
+        self.fecha_ult_lib_deuda.setDate(_SENTINEL_DATE)   # inicia vacío
+        self.fecha_ult_lib_deuda.setDisabled(True)
+        self.chk_sin_fecha = QCheckBox("Sin fecha", self)
+        self.chk_sin_fecha.setChecked(True)
+        self.chk_sin_fecha.toggled.connect(self._toggle_fecha)
+        fecha_layout = QHBoxLayout()
+        fecha_layout.addWidget(self.fecha_ult_lib_deuda)
+        fecha_layout.addWidget(self.chk_sin_fecha)
+        layout.addRow("Fecha Libre Deuda:", fecha_layout)
 
         # Botones OK/Cancel
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, parent=self)
@@ -171,6 +181,16 @@ class VentanaNuevo(QDialog):
     def showEvent(self, e) -> None:
         super().showEvent(e)
         center_on_screen(self)
+
+    def _toggle_fecha(self, checked: bool) -> None:
+        """Habilita/deshabilita el selector de fecha y muestra vacío cuando está inactivo."""
+        if checked:
+            self.fecha_ult_lib_deuda.setDate(QDate(1900, 1, 1))  # muestra vacío
+            self.fecha_ult_lib_deuda.setDisabled(True)
+        else:
+            if self.fecha_ult_lib_deuda.date() == QDate(1900, 1, 1):
+                self.fecha_ult_lib_deuda.setDate(QDate.currentDate())
+            self.fecha_ult_lib_deuda.setEnabled(True)
 
     def set_combobox_value(self, combobox: QComboBox, value: str) -> None:
         value_norm = (value or "").strip().lower()
@@ -223,15 +243,22 @@ class VentanaNuevo(QDialog):
         # Fecha
         fecha = (datos.get("fecha_ult_lib_deuda") if hasattr(datos, "get") else None)
         if isinstance(fecha, datetime):
+            self.chk_sin_fecha.setChecked(False)
             self.fecha_ult_lib_deuda.setDate(to_qdate(fecha))
             debug("Set fecha desde datetime", fecha)
         elif isinstance(fecha, str):
             qd = QDate.fromString(fecha, DATE_FMT_DB)
             if qd.isValid():
+                self.chk_sin_fecha.setChecked(False)
                 self.fecha_ult_lib_deuda.setDate(qd)
                 debug("Set fecha desde str", fecha)
             else:
+                self.chk_sin_fecha.setChecked(True)
                 warn("Formato de fecha no válido recibido desde DB.")
+        else:
+            # fecha es None en la DB → marcar "Sin fecha"
+            self.chk_sin_fecha.setChecked(True)
+            debug("Fecha NULL en DB, sin fecha cargada", None)
 
     def _email_valido(self, email: str) -> bool:
         return not email or bool(EMAIL_RE.match(email))
@@ -273,7 +300,20 @@ class VentanaNuevo(QDialog):
         condicion_gcia = self.condicion_gcia.currentText().strip()
         condicion_empleador = self.condicion_empleador.currentText().strip()
         forma_juridica = self.forma_juridica.currentText().strip()
-        fecha_ult_lib_deuda = self.fecha_ult_lib_deuda.date().toString(DATE_FMT_DB)
+        if self.chk_sin_fecha.isChecked():
+            if self.datos:  # EDICIÓN: preservar el valor original de la BD
+                fecha_orig = self.datos.get("fecha_ult_lib_deuda") if hasattr(self.datos, "get") else None
+                if isinstance(fecha_orig, datetime):
+                    fecha_ult_lib_deuda = fecha_orig.strftime("%Y-%m-%d")
+                elif isinstance(fecha_orig, str) and fecha_orig:
+                    fecha_ult_lib_deuda = fecha_orig
+                else:
+                    fecha_ult_lib_deuda = None
+                debug("Sin fecha marcado en edición, preservando valor original", fecha_ult_lib_deuda)
+            else:  # INSERCIÓN: enviar NULL
+                fecha_ult_lib_deuda = None
+        else:
+            fecha_ult_lib_deuda = self.fecha_ult_lib_deuda.date().toString(DATE_FMT_DB)
 
         # Debug útil
         print("[DEBUG] Guardar -> modo:", "EDICION" if self.datos else "INSERCION")

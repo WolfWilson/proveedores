@@ -44,8 +44,8 @@ def actualizar_registro(cuil, razon_social, provincia, localidad, calle, calle_n
         conn = obtener_conexion()
         cursor = conn.cursor()
         
-        # Conversión de fecha
-        fecha_ult_lib_deuda_dt = datetime.strptime(fecha_ult_lib_deuda, "%Y-%m-%d")
+        # Conversión de fecha (None si no se informó libre de deuda)
+        fecha_ult_lib_deuda_dt = datetime.strptime(fecha_ult_lib_deuda, "%Y-%m-%d") if fecha_ult_lib_deuda else None
         
         # Llama al procedimiento almacenado
         cursor.execute("""
@@ -192,7 +192,8 @@ def insertar_nuevo_registro(
     print(f"Condición CTA: {condicion_cta}, Condición AFIP: {condicion_afip}, Condición DGR: {condicion_dgr}")
     print(f"Condición GCIA: {condicion_gcia}, Condición Empleador: {condicion_empleador}, Forma Jurídica: {forma_juridica}")
     print(f"Fecha Últ. Libre Deuda: {fecha_ult_lib_deuda}, DNI desde CUIT: {dni_desde_cuit}")
-
+    # Conversión de fecha (None si no se informó libre de deuda)
+    fecha_ult_lib_deuda_dt = datetime.strptime(fecha_ult_lib_deuda, "%Y-%m-%d") if fecha_ult_lib_deuda else None
     query = """
     EXEC AntoInsert_Proveedores_By_CUIL
         @RAZON_SOCIAL = ?, 
@@ -226,7 +227,7 @@ def insertar_nuevo_registro(
         print("Ejecutando el procedimiento almacenado...")
         cursor.execute(query, (razon_social, cuil, provincia, localidad, calle, calle_nro, dpto, piso, email,
                                condicion_cta, condicion_afip, condicion_dgr, condicion_gcia, 
-                               condicion_empleador, forma_juridica, fecha_ult_lib_deuda, dni_desde_cuit))
+                               condicion_empleador, forma_juridica, fecha_ult_lib_deuda_dt, dni_desde_cuit))
         
         # Confirmar los cambios en la base de datos
         conexion.commit()
