@@ -2,17 +2,20 @@
 # Ventana de acceso denegado con tema coherente con la aplicación.
 
 from __future__ import annotations
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+import os
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QFont, QMovie
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayout,
 )
 
-_NO_HELP = Qt.WindowType.WindowContextHelpButtonHint  # type: ignore[attr-defined]
-_ALIGN_CENTER = Qt.AlignmentFlag.AlignCenter           # type: ignore[attr-defined]
-_ALIGN_LEFT   = Qt.AlignmentFlag.AlignLeft             # type: ignore[attr-defined]
-_ALIGN_TOP    = Qt.AlignmentFlag.AlignTop              # type: ignore[attr-defined]
-_RICH_TEXT    = Qt.TextFormat.RichText                 # type: ignore[attr-defined]
+from anto_modulos.resources import GIF_DENEGADO
+
+_NO_HELP      = Qt.WindowType.WindowContextHelpButtonHint  # type: ignore[attr-defined]
+_ALIGN_CENTER = Qt.AlignmentFlag.AlignCenter               # type: ignore[attr-defined]
+_ALIGN_LEFT   = Qt.AlignmentFlag.AlignLeft                 # type: ignore[attr-defined]
+_ALIGN_TOP    = Qt.AlignmentFlag.AlignTop                  # type: ignore[attr-defined]
+_RICH_TEXT    = Qt.TextFormat.RichText                     # type: ignore[attr-defined]
 
 
 class AccesoDenegadoDialog(QDialog):
@@ -24,8 +27,24 @@ class AccesoDenegadoDialog(QDialog):
         self.setWindowFlags(self.windowFlags() & ~_NO_HELP)  # type: ignore[arg-type]
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
-        layout.setContentsMargins(28, 28, 28, 24)
+        layout.setSpacing(12)
+        layout.setContentsMargins(28, 20, 28, 24)
+
+        # ── GIF animado ──
+        gif_label = QLabel(self)
+        gif_label.setAlignment(_ALIGN_CENTER)
+        if os.path.isfile(GIF_DENEGADO):
+            self._movie = QMovie(GIF_DENEGADO)
+            # Escalar a altura fija (150px) manteniendo proporción
+            self._movie.jumpToFrame(0)
+            orig = self._movie.currentPixmap().size()
+            if orig.height() > 0:
+                target_h = 150
+                target_w = int(orig.width() * target_h / orig.height())
+                self._movie.setScaledSize(QSize(target_w, target_h))
+            gif_label.setMovie(self._movie)
+            self._movie.start()
+        layout.addWidget(gif_label)
 
         # ── Título ──
         titulo = QLabel("🚫  Acceso denegado", self)

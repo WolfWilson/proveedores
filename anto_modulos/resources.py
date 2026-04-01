@@ -17,3 +17,5 @@ def resource_path(*parts: str) -> str:
 ICON_MAIN = resource_path("Source", "userprofile4.png")  # o "userprofile4.png" si preferís
 # 🔹 Flecha personalizada para el QDateEdit (usa la que ya tenés en /Source)
 DATE_ARROW_DOWN = resource_path("Source", "down-arrow_15775882.png")
+# 🔹 GIF animado para el diálogo de acceso denegado
+GIF_DENEGADO = resource_path("Source", "giphy.gif")
