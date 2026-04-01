@@ -23,6 +23,8 @@ from anto_modulos.anto_conexion import (
 from anto_modulos.style import STYLE
 from anto_modulos.centrar_ventana import center_on_screen
 from anto_modulos.resources import ICON_MAIN, DATE_ARROW_DOWN
+from anto_modulos.acceso import verificar_acceso
+from anto_modulos.acceso_denegado_dialog import AccesoDenegadoDialog
 
 # ──────────────────────────────
 # Configuración/Constantes
@@ -541,6 +543,16 @@ class CUILSearchApp(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyleSheet(STYLE)
+
+    # ── Control de acceso ──────────────────────────────────────
+    acceso, usuario, perfil = verificar_acceso()
+    if not acceso:
+        dlg = AccesoDenegadoDialog(usuario=usuario, perfil=perfil)
+        center_on_screen(dlg)
+        dlg.exec_()
+        sys.exit(0)
+    # ───────────────────────────────────────────────────────────
+
     win = CUILSearchApp()
     win.setWindowIcon(QIcon(ICON_MAIN))
     win.show()
