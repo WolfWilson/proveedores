@@ -1,5 +1,6 @@
 # 📋 Instructivo de Uso — Gestión de Proveedores
 
+*Programa desarrollado para agilizar la gestión del padrón de proveedores desde el sector habilitado.*
 ---
 
 ## ¿Qué problema resuelve este programa?
@@ -169,8 +170,7 @@ Sí, siempre que el equipo tenga acceso de red al servidor `SQL01` y el driver O
 
 ## Soporte
 
-Para problemas técnicos, errores inesperados o solicitudes de acceso, contactar al área de **Sistemas / Informática**.
+Para problemas técnicos, errores inesperados o solicitudes de acceso, contactar al área de **Sistemas**.
 
 ---
 
-*Programa desarrollado para agilizar la gestión del padrón de proveedores desde el sector habilitado.*
