@@ -4,12 +4,12 @@
 from __future__ import annotations
 import os
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QFont, QMovie
+from PyQt5.QtGui import QFont, QMovie, QIcon, QPixmap
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayout,
 )
 
-from anto_modulos.resources import GIF_DENEGADO
+from anto_modulos.resources import GIF_DENEGADO, ICON_MAIN
 
 _NO_HELP      = Qt.WindowType.WindowContextHelpButtonHint  # type: ignore[attr-defined]
 _ALIGN_CENTER = Qt.AlignmentFlag.AlignCenter               # type: ignore[attr-defined]
@@ -25,6 +25,10 @@ class AccesoDenegadoDialog(QDialog):
         self.setModal(True)
         self.setFixedWidth(440)
         self.setWindowFlags(self.windowFlags() & ~_NO_HELP)  # type: ignore[arg-type]
+
+        # Ícono de la barra de título
+        if os.path.isfile(ICON_MAIN):
+            self.setWindowIcon(QIcon(ICON_MAIN))
 
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
@@ -46,14 +50,29 @@ class AccesoDenegadoDialog(QDialog):
             self._movie.start()
         layout.addWidget(gif_label)
 
-        # ── Título ──
-        titulo = QLabel("🚫  Acceso denegado", self)
-        titulo.setAlignment(_ALIGN_CENTER)
+        # ── Título con ícono ──
+        titulo_row = QHBoxLayout()
+        titulo_row.setSpacing(10)
+
+        if os.path.isfile(ICON_MAIN):
+            icono_label = QLabel(self)
+            pix = QPixmap(ICON_MAIN).scaled(
+                36, 36,
+                Qt.AspectRatioMode.KeepAspectRatio,          # type: ignore[attr-defined]
+                Qt.TransformationMode.SmoothTransformation,  # type: ignore[attr-defined]
+            )
+            icono_label.setPixmap(pix)
+            titulo_row.addStretch()
+            titulo_row.addWidget(icono_label)
+
+        titulo = QLabel("Acceso denegado", self)
         font_titulo = QFont()
         font_titulo.setPointSize(15)
         font_titulo.setBold(True)
         titulo.setFont(font_titulo)
-        layout.addWidget(titulo)
+        titulo_row.addWidget(titulo)
+        titulo_row.addStretch()
+        layout.addLayout(titulo_row)
 
         # ── Mensaje principal ──
         msg = QLabel(
